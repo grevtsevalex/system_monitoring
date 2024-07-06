@@ -11,6 +11,9 @@ import (
 // defaultInterval интервал отправки данных клиенту.
 const defaultInterval = 5 * time.Second
 
+// loopSize кол-во итераций для отправки сообщений
+const loopSize = 10
+
 // Service модель сервиса.
 type Service struct {
 	serverpb.UnimplementedMonitoringServiceServer
@@ -36,7 +39,7 @@ L:
 			break L
 
 		case <-time.After(s.interval):
-			for i := range 10 {
+			for i := range loopSize {
 				msg := &serverpb.Snapshot{
 					Number: uint32(i),
 					Time:   timestamppb.Now(),

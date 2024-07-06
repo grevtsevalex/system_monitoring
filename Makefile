@@ -4,7 +4,7 @@ build:
 	go build -v -o $(PROG_NAME) ./cmd
 
 run: build
-	$(PROG_NAME)
+	$(PROG_NAME) -config ./configs/config.toml
 
 test:
 	go test -race ./...
@@ -14,3 +14,6 @@ install-lint-deps:
 
 lint: install-lint-deps
 	$(shell go env GOPATH)/bin/golangci-lint run ./...
+
+generate:
+	protoc api/server.proto --go_out=./internal/server/pb --go-grpc_out=./internal/server/pb

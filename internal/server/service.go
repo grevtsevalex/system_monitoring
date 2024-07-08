@@ -39,7 +39,7 @@ L:
 			break L
 
 		case <-time.After(s.interval):
-			for i := range loopSize {
+			for i := 1; i < loopSize; i++ {
 				msg := &serverpb.Snapshot{
 					Number: uint32(i),
 					Time:   timestamppb.Now(),

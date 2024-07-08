@@ -19,13 +19,13 @@ func (s *TestScout) Status() StatusID {
 
 // Run запустить скаута.
 func (s *TestScout) Run() error {
-	s.status = statusIDPending
+	s.status = StatusIDPending
 	return nil
 }
 
 // Stop остановить работу скаута.
 func (s *TestScout) Stop() error {
-	s.status = statusIDStopping
+	s.status = StatusIDStopping
 	return nil
 }
 
@@ -54,11 +54,11 @@ func TestScoutsRunner(t *testing.T) {
 		for name, sc := range sr.getScouts() {
 			switch name {
 			case "first":
-				require.True(t, sc.Status() == statusIDPending || sc.Status() == statusIDRunning)
+				require.True(t, sc.Status() == StatusIDPending || sc.Status() == StatusIDRunning)
 			case "second":
-				require.True(t, sc.Status() == statusIDPending || sc.Status() == statusIDRunning)
+				require.True(t, sc.Status() == StatusIDPending || sc.Status() == StatusIDRunning)
 			case "third":
-				require.True(t, sc.Status() == statusIDPending || sc.Status() == statusIDRunning)
+				require.True(t, sc.Status() == StatusIDPending || sc.Status() == StatusIDRunning)
 			default:
 				t.Errorf("undefined scout :%s", name)
 			}
@@ -70,11 +70,11 @@ func TestScoutsRunner(t *testing.T) {
 		for name, sc := range sr.getScouts() {
 			switch name {
 			case "first":
-				require.True(t, sc.Status() == statusIDCrashedWitError || sc.Status() == statusIDStopping)
+				require.True(t, sc.Status() == StatusIDCrashedWitError || sc.Status() == StatusIDStopping)
 			case "second":
-				require.True(t, sc.Status() == statusIDCrashedWitError || sc.Status() == statusIDStopping)
+				require.True(t, sc.Status() == StatusIDCrashedWitError || sc.Status() == StatusIDStopping)
 			case "third":
-				require.True(t, sc.Status() == statusIDCrashedWitError || sc.Status() == statusIDStopping)
+				require.True(t, sc.Status() == StatusIDCrashedWitError || sc.Status() == StatusIDStopping)
 			default:
 				t.Errorf("undefined scout :%s", name)
 			}

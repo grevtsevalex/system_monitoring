@@ -16,16 +16,17 @@ type Scout interface {
 type StatusID int
 
 const (
-	statusIDSleeping        = iota // statusIDSleeping ожидает запуска.
-	statusIDPending                // statusIDPending запускается.
-	statusIDRunning                // statusIDRunning запущен.
-	statusIDStopping               // statusIDStopping останавливается.
-	statusIDCrashedWitError        // statusIDCrashedWitError упал с ошибкой.
+	StatusIDSleeping        = iota // statusIDSleeping ожидает запуска.
+	StatusIDPending                // statusIDPending запускается.
+	StatusIDRunning                // statusIDRunning запущен.
+	StatusIDStopping               // statusIDStopping останавливается.
+	StatusIDCrashedWitError        // statusIDCrashedWitError упал с ошибкой.
 )
 
 // Logger тип логгера.
 type Logger interface {
 	Log(msg string)
+	Debug(msg string)
 	Error(msg string)
 }
 
@@ -52,7 +53,7 @@ func NewScoutsRunner(logger Logger) ScoutsRunner {
 // RunScouts запуск скаутов.
 func (s *scoutsRunner) RunScouts() error {
 	for name, scout := range s.scouts {
-		if scout.Status() != StatusID(statusIDSleeping) {
+		if scout.Status() != StatusID(StatusIDSleeping) {
 			continue
 		}
 
@@ -78,7 +79,7 @@ func (s *scoutsRunner) RegisterScout(name string, scout Scout) {
 // StopScouts остановить скаутов.
 func (s *scoutsRunner) StopScouts() error {
 	for name, scout := range s.scouts {
-		if scout.Status() == statusIDCrashedWitError && scout.Status() == statusIDStopping {
+		if scout.Status() == StatusIDCrashedWitError && scout.Status() == StatusIDStopping {
 			continue
 		}
 

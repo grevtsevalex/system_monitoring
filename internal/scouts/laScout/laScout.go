@@ -3,20 +3,27 @@ package lascout
 import (
 	"context"
 	"fmt"
+	"os/exec"
+	"time"
 
 	"github.com/grevtsevalex/system_monitoring/internal/scouts"
 )
 
+// laScout тип скаута сбора LoadAverage.
 type laScout struct {
-	status scouts.StatusID
-	ctx    context.Context
-	logger scouts.Logger
+	status   scouts.StatusID
+	ctx      context.Context
+	cancelFn context.CancelFunc
+	logger   scouts.Logger
 }
 
+// NewLoadAverageScout конструктор скаута.
 func NewLoadAverageScout(ctx context.Context, logg scouts.Logger) *laScout {
-	return &laScout{ctx: ctx, status: scouts.StatusIDSleeping, logger: logg}
+	newCtx, cancelfn := context.WithCancel(ctx)
+	return &laScout{ctx: newCtx, cancelFn: cancelfn, status: scouts.StatusIDSleeping, logger: logg}
 }
 
+// Run запуск скаута.
 func (l *laScout) Run() error {
 	l.status = scouts.StatusIDPending
 	go func() {
@@ -34,15 +41,27 @@ func (l *laScout) Run() error {
 
 			// call linux fn to get info
 			// write to storage or aggregator
+			cmd := exec.Command("uptime")
+			result, err := cmd.Output()
+			if err != nil {
+				l.logger.Error(fmt.Sprintf("calling uptime: %s", err.Error()))
+			}
+
+			l.logger.Log(string(result))
+
+			time.Sleep(time.Second * 1)
 		}
 	}()
 	return nil
 }
 
+// Stop остановка скаута.
 func (l *laScout) Stop() error {
-
+	l.cancelFn()
+	return nil
 }
 
+// Status получение статуса скаута.
 func (l *laScout) Status() scouts.StatusID {
 	return l.status
 }

@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"github.com/grevtsevalex/system_monitoring/internal/logger"
+	"github.com/grevtsevalex/system_monitoring/internal/scouts"
+	lascout "github.com/grevtsevalex/system_monitoring/internal/scouts/laScout"
 	"github.com/grevtsevalex/system_monitoring/internal/server"
 )
 
@@ -28,7 +30,16 @@ func main() {
 		os.Exit(1)
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
 	logg := logger.New(config.Logger.Level, os.Stdout)
+
+	sRunner := scouts.NewScoutsRunner(logg)
+	sRunner.RegisterScout("loadAverage", lascout.NewLoadAverageScout(ctx, logg))
+	err = sRunner.RunScouts()
+	if err != nil {
+		logg.Error("failed to run scouts: " + err.Error())
+		os.Exit(1)
+	}
 
 	grpcServer := server.NewServer(server.Config{Port: config.Server.Port}, logg)
 
@@ -46,7 +57,9 @@ func main() {
 
 	<-stop
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	cancel()
+
+	ctx, cancel = context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
 	if err := grpcServer.Stop(ctx); err != nil {

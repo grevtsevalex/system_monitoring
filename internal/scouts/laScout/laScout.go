@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
+	"strings"
 	"time"
 
 	"github.com/grevtsevalex/system_monitoring/internal/scouts"
@@ -15,12 +16,13 @@ type laScout struct {
 	ctx      context.Context
 	cancelFn context.CancelFunc
 	logger   scouts.Logger
+	storage  *Storage
 }
 
 // NewLoadAverageScout конструктор скаута.
-func NewLoadAverageScout(ctx context.Context, logg scouts.Logger) *laScout {
+func NewLoadAverageScout(ctx context.Context, logg scouts.Logger, st *Storage) *laScout {
 	newCtx, cancelfn := context.WithCancel(ctx)
-	return &laScout{ctx: newCtx, cancelFn: cancelfn, status: scouts.StatusIDSleeping, logger: logg}
+	return &laScout{ctx: newCtx, cancelFn: cancelfn, status: scouts.StatusIDSleeping, logger: logg, storage: st}
 }
 
 // Run запуск скаута.
@@ -39,15 +41,15 @@ func (l *laScout) Run() error {
 			default:
 			}
 
-			// call linux fn to get info
-			// write to storage or aggregator
 			cmd := exec.Command("uptime")
 			result, err := cmd.Output()
 			if err != nil {
 				l.logger.Error(fmt.Sprintf("calling uptime: %s", err.Error()))
 			}
 
-			l.logger.Log(string(result))
+			loadAveragesValues := strings.Trim(string(result[len(result)-17:]), "\n")
+			l.logger.Log(loadAveragesValues)
+			l.write(loadAveragesValues)
 
 			time.Sleep(time.Second * 1)
 		}
@@ -64,4 +66,9 @@ func (l *laScout) Stop() error {
 // Status получение статуса скаута.
 func (l *laScout) Status() scouts.StatusID {
 	return l.status
+}
+
+// write записать данные в хранилище.
+func (l *laScout) write(data string) {
+	l.storage.Save(scouts.MertricRow{Date: time.Now().UTC(), Body: data, Name: "Load Average"})
 }

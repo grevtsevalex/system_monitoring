@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 
+	"github.com/grevtsevalex/system_monitoring/internal/collector"
 	serverpb "github.com/grevtsevalex/system_monitoring/internal/server/pb"
 	"google.golang.org/grpc"
 )
@@ -17,8 +18,9 @@ type Logger interface {
 
 // Server модель сервера.
 type Server struct {
-	config Config
-	logger Logger
+	config    Config
+	logger    Logger
+	collector collector.Collector
 }
 
 // Config конфиг сервера.
@@ -27,8 +29,8 @@ type Config struct {
 }
 
 // NewServer конструктор сервера.
-func NewServer(config Config, logger Logger) *Server {
-	return &Server{config: config, logger: logger}
+func NewServer(config Config, logger Logger, collector collector.Collector) *Server {
+	return &Server{config: config, logger: logger, collector: collector}
 }
 
 // Start старт сервера.
@@ -39,7 +41,7 @@ func (s *Server) Start() error {
 	}
 
 	server := grpc.NewServer()
-	serverpb.RegisterMonitoringServiceServer(server, NewService())
+	serverpb.RegisterMonitoringServiceServer(server, NewService(s.collector))
 	s.logger.Log(fmt.Sprintf("starting grpc server on %s", lsn.Addr().String()))
 
 	if err := server.Serve(lsn); err != nil {

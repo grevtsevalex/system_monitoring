@@ -1,9 +1,7 @@
 package cpuScout
 
 import (
-	"fmt"
-	"strconv"
-	"strings"
+	"errors"
 	"sync"
 	"time"
 
@@ -15,6 +13,17 @@ type Storage struct {
 	mu   sync.RWMutex
 	rows map[int64]scouts.MertricRow
 }
+
+// CpuData модель данных CPU
+type CpuData struct {
+	Usr  float32
+	Sys  float32
+	Idle float32
+	Date time.Time
+	Name string
+}
+
+var ErrFewAvgValues = errors.New("few avg values")
 
 // NewCPUStorage конструктор хранилища.
 func NewCPUStorage() *Storage {
@@ -53,41 +62,38 @@ func (s *Storage) GetAvgByRange(r time.Duration) (scouts.MertricRow, error) {
 	}
 
 	if len(metrics) == 1 {
-		return metrics[0], nil
+		return scouts.MertricRow{Date: metrics[0].Date, Body: metrics[0], Name: metrics[0].Name}, nil
 	}
 
 	user := make([]float32, 0, len(metrics))
 	system := make([]float32, 0, len(metrics))
 	idle := make([]float32, 0, len(metrics))
+
 	var lastMetricDate time.Time
 	var metricName = metrics[0].Name
 
 	for _, metric := range metrics {
-		str := strings.ReplaceAll(metric.Body, ",", ".")
-		values := strings.Split(str, " ")
-		usr, err := strconv.ParseFloat(values[0], 32)
-		if err != nil {
-			return scouts.MertricRow{}, fmt.Errorf("parse float: %w", err)
-		}
-		user = append(user, float32(usr))
-
-		sys, err := strconv.ParseFloat(values[1], 32)
-		if err != nil {
-			return scouts.MertricRow{}, fmt.Errorf("parse float: %w", err)
-		}
-		system = append(system, float32(sys))
-
-		idl, err := strconv.ParseFloat(values[2], 32)
-		if err != nil {
-			return scouts.MertricRow{}, fmt.Errorf("parse float: %w", err)
-		}
-		idle = append(idle, float32(idl))
+		data := metric.Body.(CpuData)
+		user = append(user, data.Usr)
+		system = append(system, data.Sys)
+		idle = append(idle, data.Idle)
 		lastMetricDate = metric.Date
 	}
 
 	avgValues := calcAvg(user, system, idle)
 
-	data := fmt.Sprintf("%.2f, %.2f, %.2f", avgValues[0], avgValues[1], avgValues[2])
+	if len(avgValues) != 3 {
+		return scouts.MertricRow{}, ErrFewAvgValues
+	}
+
+	data := CpuData{
+		Usr:  avgValues[0],
+		Sys:  avgValues[1],
+		Idle: avgValues[2],
+		Name: metricName,
+		Date: lastMetricDate,
+	}
+
 	return scouts.MertricRow{Date: lastMetricDate, Body: data, Name: metricName}, nil
 }
 

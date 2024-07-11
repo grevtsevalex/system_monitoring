@@ -1,9 +1,7 @@
 package lascout
 
 import (
-	"fmt"
-	"strconv"
-	"strings"
+	"errors"
 	"sync"
 	"time"
 
@@ -14,6 +12,17 @@ import (
 type Storage struct {
 	mu   sync.RWMutex
 	rows map[int64]scouts.MertricRow
+}
+
+var ErrFewAvgValues = errors.New("few avg values")
+
+// LAData модель данных LoadAverage.
+type LAData struct {
+	PerMinute    float32
+	Per5Minute   float32
+	Perf15Minute float32
+	Date         time.Time
+	Name         string
 }
 
 // NewLAStorage конструктор хранилища.
@@ -63,31 +72,27 @@ func (s *Storage) GetAvgByRange(r time.Duration) (scouts.MertricRow, error) {
 	var metricName = metrics[0].Name
 
 	for _, metric := range metrics {
-		str := strings.ReplaceAll(metric.Body, ",", ".")
-		values := strings.Split(str, ". ")
-		byMinute, err := strconv.ParseFloat(values[0], 32)
-		if err != nil {
-			return scouts.MertricRow{}, fmt.Errorf("parse float: %w", err)
-		}
-		minute = append(minute, float32(byMinute))
-
-		by5Minute, err := strconv.ParseFloat(values[1], 32)
-		if err != nil {
-			return scouts.MertricRow{}, fmt.Errorf("parse float: %w", err)
-		}
-		minuteX5 = append(minuteX5, float32(by5Minute))
-
-		by15Minute, err := strconv.ParseFloat(values[2], 32)
-		if err != nil {
-			return scouts.MertricRow{}, fmt.Errorf("parse float: %w", err)
-		}
-		minuteX15 = append(minuteX15, float32(by15Minute))
+		data := metric.Body.(LAData)
+		minute = append(minute, data.PerMinute)
+		minuteX5 = append(minuteX5, data.Per5Minute)
+		minuteX15 = append(minuteX15, data.Perf15Minute)
 		lastMetricDate = metric.Date
 	}
 
 	avgValues := calcAvg(minute, minuteX5, minuteX15)
 
-	data := fmt.Sprintf("%.2f, %.2f, %.2f", avgValues[0], avgValues[1], avgValues[2])
+	if len(avgValues) != 3 {
+		return scouts.MertricRow{}, ErrFewAvgValues
+	}
+
+	data := LAData{
+		PerMinute:    avgValues[0],
+		Per5Minute:   avgValues[1],
+		Perf15Minute: avgValues[2],
+		Name:         metricName,
+		Date:         lastMetricDate,
+	}
+
 	return scouts.MertricRow{Date: lastMetricDate, Body: data, Name: metricName}, nil
 }
 

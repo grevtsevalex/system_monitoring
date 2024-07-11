@@ -2,34 +2,38 @@ package server
 
 import (
 	"log"
+	"math"
 	"time"
 
+	"github.com/grevtsevalex/system_monitoring/internal/collector"
 	serverpb "github.com/grevtsevalex/system_monitoring/internal/server/pb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-// defaultInterval интервал отправки данных клиенту.
-const defaultInterval = 5 * time.Second
-
-// loopSize кол-во итераций для отправки сообщений
-const loopSize = 10
-
 // Service модель сервиса.
 type Service struct {
 	serverpb.UnimplementedMonitoringServiceServer
-	interval time.Duration
+	clc collector.Collector
 }
 
+const (
+	minSecondsForPeriod = 2
+	maxSecondsForRange  = 60
+)
+
 // NewService конструктор сервиса.
-func NewService() *Service {
-	return &Service{
-		interval: defaultInterval,
-	}
+func NewService(clc collector.Collector) *Service {
+	return &Service{clc: clc}
 }
 
 // GetMetrics получение метрик.
 func (s *Service) GetMetrics(req *serverpb.GetMetricsRequest, srv serverpb.MonitoringService_GetMetricsServer) error {
 	log.Printf("new listener")
+
+	periodSeconds := math.Max(float64(req.PeriodSec), minSecondsForPeriod)
+	rangeSeconds := math.Min(float64(req.RangeSec), maxSecondsForRange)
+	period := time.Duration(periodSeconds) * time.Second
+	rang := time.Duration(rangeSeconds) * time.Second
 
 L:
 	for {
@@ -38,17 +42,15 @@ L:
 			log.Printf("listener disconnected")
 			break L
 
-		case <-time.After(s.interval):
-			for i := 1; i < loopSize; i++ {
-				msg := &serverpb.Snapshot{
-					Number: uint32(i),
-					Time:   timestamppb.Now(),
-				}
+		case <-time.After(period):
+			msg := &serverpb.Snapshot{
+				Msg:  s.clc.GetSnapshot(rang),
+				Time: timestamppb.Now(),
+			}
 
-				if err := srv.Send(msg); err != nil {
-					log.Printf("unable to send message to stats listener: %v", err)
-					break L
-				}
+			if err := srv.Send(msg); err != nil {
+				log.Printf("unable to send message to stats listener: %v", err)
+				break L
 			}
 		}
 	}

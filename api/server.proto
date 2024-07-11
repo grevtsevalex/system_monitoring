@@ -10,11 +10,11 @@ service MonitoringService {
 }
 
 message GetMetricsRequest {
-  uint32 period = 1;
-  uint32 range = 2; 
+  uint32 periodSec = 1;
+  uint32 rangeSec = 2;
 }
 
 message Snapshot {
-  uint32 number = 1;
+  string msg = 1;
   google.protobuf.Timestamp time = 2;
 }

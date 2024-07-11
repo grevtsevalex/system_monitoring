@@ -11,6 +11,7 @@ import (
 	"github.com/grevtsevalex/system_monitoring/internal/collector"
 	"github.com/grevtsevalex/system_monitoring/internal/logger"
 	"github.com/grevtsevalex/system_monitoring/internal/scouts"
+	"github.com/grevtsevalex/system_monitoring/internal/scouts/cpuScout"
 	lascout "github.com/grevtsevalex/system_monitoring/internal/scouts/laScout"
 	"github.com/grevtsevalex/system_monitoring/internal/server"
 )
@@ -34,17 +35,21 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	logg := logger.New(config.Logger.Level, os.Stdout)
 
-	st := lascout.NewLAStorage()
-
 	sRunner := scouts.NewScoutsRunner(logg)
-	sRunner.RegisterScout("loadAverage", lascout.NewLoadAverageScout(ctx, logg, st))
+
+	laSt := lascout.NewLAStorage()
+	sRunner.RegisterScout("loadAverage", lascout.NewLoadAverageScout(ctx, logg, laSt))
+
+	cpuSt := cpuScout.NewCPUStorage()
+	sRunner.RegisterScout("CPU", cpuScout.NewCPUScout(ctx, logg, cpuSt))
+
 	err = sRunner.RunScouts()
 	if err != nil {
 		logg.Error("failed to run scouts: " + err.Error())
 		os.Exit(1)
 	}
 
-	grpcServer := server.NewServer(server.Config{Port: config.Server.Port}, logg, collector.NewCollector([]scouts.ScoutStorage{st}))
+	grpcServer := server.NewServer(server.Config{Port: config.Server.Port}, logg, collector.NewCollector([]scouts.ScoutStorage{laSt, cpuSt}))
 
 	logg.Info("monitoring is running...")
 

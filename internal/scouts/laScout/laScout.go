@@ -48,7 +48,7 @@ func (l *laScout) Run() error {
 			}
 
 			loadAveragesValues := strings.Trim(string(result[len(result)-17:]), "\n")
-			l.logger.Log(loadAveragesValues)
+			// l.logger.Log(loadAveragesValues)
 			l.write(loadAveragesValues)
 
 			time.Sleep(time.Second * 1)

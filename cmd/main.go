@@ -36,7 +36,7 @@ func main() {
 	logg := logger.New(config.Logger.Level, os.Stdout)
 
 	sRunner := scouts.NewScoutsRunner(logg)
-	storages := make([]scouts.ScoutStorage, 0, 0)
+	storages := make([]scouts.ScoutStorage, 0)
 
 	if config.Metrics.LoadAverage {
 		laSt := lascout.NewLAStorage()

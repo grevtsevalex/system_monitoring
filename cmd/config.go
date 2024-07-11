@@ -10,8 +10,9 @@ import (
 
 // Config модель конфига.
 type Config struct {
-	Logger LoggerConf
-	Server ServerConf
+	Logger  LoggerConf
+	Server  ServerConf
+	Metrics MetricsConf
 }
 
 // LoggerConf модель конфига логгера.
@@ -23,6 +24,12 @@ type LoggerConf struct {
 type ServerConf struct {
 	Host string `toml:"host"`
 	Port int    `toml:"port"`
+}
+
+// MetricsConf модель конфига метрик.
+type MetricsConf struct {
+	LoadAverage bool `toml:"loadAverage"`
+	CPU         bool `toml:"cpu"`
 }
 
 // NewConfig инициализация конфига.

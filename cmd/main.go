@@ -36,12 +36,19 @@ func main() {
 	logg := logger.New(config.Logger.Level, os.Stdout)
 
 	sRunner := scouts.NewScoutsRunner(logg)
+	storages := make([]scouts.ScoutStorage, 0, 0)
 
-	laSt := lascout.NewLAStorage()
-	sRunner.RegisterScout("loadAverage", lascout.NewLoadAverageScout(ctx, logg, laSt))
+	if config.Metrics.LoadAverage {
+		laSt := lascout.NewLAStorage()
+		sRunner.RegisterScout("loadAverage", lascout.NewLoadAverageScout(ctx, logg, laSt))
+		storages = append(storages, laSt)
+	}
 
-	cpuSt := cpuScout.NewCPUStorage()
-	sRunner.RegisterScout("CPU", cpuScout.NewCPUScout(ctx, logg, cpuSt))
+	if config.Metrics.CPU {
+		cpuSt := cpuScout.NewCPUStorage()
+		sRunner.RegisterScout("CPU", cpuScout.NewCPUScout(ctx, logg, cpuSt))
+		storages = append(storages, cpuSt)
+	}
 
 	err = sRunner.RunScouts()
 	if err != nil {
@@ -49,7 +56,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	grpcServer := server.NewServer(server.Config{Port: config.Server.Port}, logg, collector.NewCollector([]scouts.ScoutStorage{laSt, cpuSt}))
+	grpcServer := server.NewServer(server.Config{Port: config.Server.Port}, logg, collector.NewCollector(storages))
 
 	logg.Info("monitoring is running...")
 

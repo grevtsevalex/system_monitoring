@@ -5,4 +5,6 @@ host = "localhost"
 [logger]
 level = "INFO"
 
-
+[metrics]
+loadAverage = true
+cpu = true

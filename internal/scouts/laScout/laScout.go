@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
+	"strconv"
 	"strings"
 	"time"
 
@@ -18,6 +19,9 @@ type laScout struct {
 	logger   scouts.Logger
 	storage  *Storage
 }
+
+// MetricName название метрики.
+const MetricName = "LoadAverages"
 
 // NewLoadAverageScout конструктор скаута.
 func NewLoadAverageScout(ctx context.Context, logg scouts.Logger, st *Storage) *laScout {
@@ -48,7 +52,6 @@ func (l *laScout) Run() error {
 			}
 
 			loadAveragesValues := strings.Trim(string(result[len(result)-17:]), "\n")
-			// l.logger.Log(loadAveragesValues)
 			l.write(loadAveragesValues)
 
 			time.Sleep(time.Second * 1)
@@ -70,5 +73,31 @@ func (l *laScout) Status() scouts.StatusID {
 
 // write записать данные в хранилище.
 func (l *laScout) write(data string) {
-	l.storage.Save(scouts.MertricRow{Date: time.Now().UTC(), Body: data, Name: "Load Average"})
+	str := strings.ReplaceAll(data, ",", ".")
+	values := strings.Split(str, ". ")
+	byMinute, err := strconv.ParseFloat(values[0], 32)
+	if err != nil {
+		l.logger.Error(fmt.Sprintf("parse float: %s", err.Error()))
+	}
+
+	by5Minute, err := strconv.ParseFloat(values[1], 32)
+	if err != nil {
+		l.logger.Error(fmt.Sprintf("parse float: %s", err.Error()))
+	}
+
+	by15Minute, err := strconv.ParseFloat(values[2], 32)
+	if err != nil {
+		l.logger.Error(fmt.Sprintf("parse float: %s", err.Error()))
+	}
+
+	date := time.Now().UTC()
+
+	cpuData := LAData{
+		Date:         date,
+		PerMinute:    float32(byMinute),
+		Per5Minute:   float32(by5Minute),
+		Perf15Minute: float32(by15Minute),
+		Name:         MetricName}
+
+	l.storage.Save(scouts.MertricRow{Name: MetricName, Date: date, Body: cpuData})
 }

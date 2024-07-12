@@ -41,7 +41,7 @@ func (s *Server) Start() error {
 	}
 
 	server := grpc.NewServer()
-	serverpb.RegisterMonitoringServiceServer(server, NewService(s.collector))
+	serverpb.RegisterMonitoringServiceServer(server, NewService(s.collector, s.logger))
 	s.logger.Log(fmt.Sprintf("starting grpc server on %s", lsn.Addr().String()))
 
 	if err := server.Serve(lsn); err != nil {

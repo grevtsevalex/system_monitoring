@@ -1,7 +1,7 @@
 package server
 
 import (
-	"log"
+	"fmt"
 	"math"
 	"time"
 
@@ -13,7 +13,8 @@ import (
 // Service модель сервиса.
 type Service struct {
 	serverpb.UnimplementedMonitoringServiceServer
-	clc collector.Collector
+	clc    collector.Collector
+	logger Logger
 }
 
 const (
@@ -22,13 +23,13 @@ const (
 )
 
 // NewService конструктор сервиса.
-func NewService(clc collector.Collector) *Service {
-	return &Service{clc: clc}
+func NewService(clc collector.Collector, logger Logger) *Service {
+	return &Service{clc: clc, logger: logger}
 }
 
 // GetMetrics получение метрик.
 func (s *Service) GetMetrics(req *serverpb.GetMetricsRequest, srv serverpb.MonitoringService_GetMetricsServer) error {
-	log.Printf("new listener")
+	s.logger.Log("new listener")
 
 	periodSeconds := math.Max(float64(req.PeriodSec), minSecondsForPeriod)
 	rangeSeconds := math.Min(float64(req.RangeSec), maxSecondsForRange)
@@ -39,17 +40,31 @@ L:
 	for {
 		select {
 		case <-srv.Context().Done():
-			log.Printf("listener disconnected")
+			s.logger.Log("listener disconnected")
 			break L
 
 		case <-time.After(period):
-			msg := &serverpb.Snapshot{
-				Msg:  s.clc.GetSnapshot(rang),
-				Time: timestamppb.Now(),
+			sn := s.clc.GetSnapshot(rang)
+			msg := &serverpb.Snapshot{}
+			if sn.Cpu.Filled {
+				msg.Cpu = &serverpb.CpuMessage{
+					Usr:  sn.Cpu.Usr,
+					Sys:  sn.Cpu.Sys,
+					Idle: sn.Cpu.Idle,
+				}
 			}
 
+			if sn.LA.Filled {
+				msg.La = &serverpb.LAMessage{
+					PerMinute:    sn.LA.PerMinute,
+					Per5Minutes:  sn.LA.Per5Minute,
+					Per15Minutes: sn.LA.Per15Minute,
+				}
+			}
+			msg.Time = timestamppb.Now()
+
 			if err := srv.Send(msg); err != nil {
-				log.Printf("unable to send message to stats listener: %v", err)
+				s.logger.Error(fmt.Sprintf("unable to send message to metrics listener: %v", err))
 				break L
 			}
 		}

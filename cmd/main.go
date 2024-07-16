@@ -17,9 +17,11 @@ import (
 )
 
 var configFile string
+var portFromArgs int
 
 func init() {
 	flag.StringVar(&configFile, "config", "env.toml", "Path to configuration file")
+	flag.IntVar(&portFromArgs, "port", 0, "grpc server port")
 }
 
 func main() {
@@ -30,6 +32,10 @@ func main() {
 		err = fmt.Errorf("config initialization: %w", err)
 		os.Stderr.WriteString(err.Error())
 		os.Exit(1)
+	}
+
+	if portFromArgs != 0 {
+		config.Server.Port = portFromArgs
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())

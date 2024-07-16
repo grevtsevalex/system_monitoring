@@ -10,7 +10,7 @@
       "request": "launch",
       "mode": "auto",
       "program": "${workspaceFolder}/cmd",
-      "args": "--config ${workspaceFolder}/configs/config.toml",
+      "args": "--config ${workspaceFolder}/configs/config.toml --port 55555",
     }
   ]
 }

@@ -30,6 +30,7 @@ type ServerConf struct {
 type MetricsConf struct {
 	LoadAverage bool `toml:"loadAverage"`
 	CPU         bool `toml:"cpu"`
+	Disc        bool `toml:"disc"`
 }
 
 // NewConfig инициализация конфига.

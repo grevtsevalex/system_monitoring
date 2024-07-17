@@ -1,10 +1,13 @@
 PROG_NAME := "./bin/sys_monitoring"
 
 build:
-	go build -v -o $(PROG_NAME) ./cmd
+	go build -v -o $(PROG_NAME) ./cmd/server
 
 run: build
-	$(PROG_NAME) -config ./configs/config.toml
+	$(PROG_NAME) -config ./configs/config.toml -port 55555
+
+run-client:
+	go run ./cmd/client/main.go -port 55555
 
 test:
 	go test -race ./...

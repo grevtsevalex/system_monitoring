@@ -8,6 +8,7 @@ import (
 
 	"github.com/grevtsevalex/system_monitoring/internal/scouts"
 	"github.com/grevtsevalex/system_monitoring/internal/scouts/cpuScout"
+	"github.com/grevtsevalex/system_monitoring/internal/scouts/discscout"
 	lascout "github.com/grevtsevalex/system_monitoring/internal/scouts/laScout"
 )
 
@@ -29,14 +30,16 @@ func NewCollector(storages []scouts.ScoutStorage, logger Logger) Collector {
 }
 
 var (
-	ErrTypeAssertionLA  = errors.New("failed type assertion LA")
-	ErrTypeAssertionCPU = errors.New("failed type assertion CPU")
+	ErrTypeAssertionLA   = errors.New("failed type assertion LA")
+	ErrTypeAssertionCPU  = errors.New("failed type assertion CPU")
+	ErrTypeAssertionDisc = errors.New("failed type assertion Disc")
 )
 
 // Snapshot модель снэпшота.
 type Snapshot struct {
-	Cpu Cpu
-	LA  LA
+	Cpu  Cpu
+	LA   LA
+	Disc DiscData
 }
 
 // LA модель данных LoadAverage.
@@ -53,6 +56,20 @@ type Cpu struct {
 	Sys    float32
 	Idle   float32
 	Filled bool
+}
+
+// DiscData модель данных загрузки дисков.
+type DiscData struct {
+	Devices []Device
+	Filled  bool
+}
+
+// Device модель устройства.
+type Device struct {
+	Name string
+	Tps  float32
+	Rps  float32
+	Wps  float32
 }
 
 // GetSnapshot получение снэпшота системы за период.
@@ -105,6 +122,27 @@ func (s *Snapshot) fill(metric scouts.MertricRow) error {
 			Per5Minute:  data.Per5Minute,
 			Per15Minute: data.Perf15Minute,
 			Filled:      true,
+		}
+	}
+
+	if metric.Name == discscout.MetricName {
+		data, ok := metric.Body.(discscout.DiscData)
+		if !ok {
+			return ErrTypeAssertionDisc
+		}
+
+		s.Disc = DiscData{
+			Filled: true,
+		}
+
+		for _, d := range data.Devices {
+			device := Device{
+				Name: d.Name,
+				Tps:  d.Tps,
+				Rps:  d.Rps,
+				Wps:  d.Wps,
+			}
+			s.Disc.Devices = append(s.Disc.Devices, device)
 		}
 	}
 

@@ -8,3 +8,4 @@ level = "INFO"
 [metrics]
 loadAverage = true
 cpu = true
+disc = true

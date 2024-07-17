@@ -12,6 +12,7 @@ import (
 	"github.com/grevtsevalex/system_monitoring/internal/logger"
 	"github.com/grevtsevalex/system_monitoring/internal/scouts"
 	"github.com/grevtsevalex/system_monitoring/internal/scouts/cpuScout"
+	"github.com/grevtsevalex/system_monitoring/internal/scouts/discscout"
 	lascout "github.com/grevtsevalex/system_monitoring/internal/scouts/laScout"
 	"github.com/grevtsevalex/system_monitoring/internal/server"
 )
@@ -54,6 +55,12 @@ func main() {
 		cpuSt := cpuScout.NewCPUStorage()
 		sRunner.RegisterScout(cpuScout.MetricName, cpuScout.NewCPUScout(ctx, logg, cpuSt))
 		storages = append(storages, cpuSt)
+	}
+
+	if config.Metrics.Disc {
+		discSt := discscout.NewDiscStorage()
+		sRunner.RegisterScout(discscout.MetricName, discscout.NewDiscScout(ctx, logg, discSt))
+		storages = append(storages, discSt)
 	}
 
 	err = sRunner.RunScouts()

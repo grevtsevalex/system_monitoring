@@ -17,7 +17,8 @@ message GetMetricsRequest {
 message Snapshot {
   LAMessage la = 1;
   CpuMessage cpu = 2;
-  google.protobuf.Timestamp time = 3;
+  DiscMessage disc = 3;
+  google.protobuf.Timestamp time = 4;
 }
 
 message LAMessage {
@@ -30,4 +31,16 @@ message CpuMessage {
   float usr = 1;
   float sys = 2;
   float idle = 3;
+}
+
+message DiscMessage {
+	repeated Device devices = 1;
+  google.protobuf.Timestamp time = 3;
+}
+
+message Device {
+	string Name = 1;
+	float Tps = 2;
+	float Rps = 3;
+	float Wps = 4;
 }

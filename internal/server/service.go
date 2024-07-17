@@ -61,6 +61,19 @@ L:
 					Per15Minutes: sn.LA.Per15Minute,
 				}
 			}
+
+			if sn.Disc.Filled {
+				msg.Disc = &serverpb.DiscMessage{}
+				for _, deviceInfo := range sn.Disc.Devices {
+					device := serverpb.Device{
+						Name: deviceInfo.Name,
+						Tps:  deviceInfo.Tps,
+						Rps:  deviceInfo.Rps,
+						Wps:  deviceInfo.Wps,
+					}
+					msg.Disc.Devices = append(msg.Disc.Devices, &device)
+				}
+			}
 			msg.Time = timestamppb.Now()
 
 			if err := srv.Send(msg); err != nil {

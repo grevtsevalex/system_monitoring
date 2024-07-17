@@ -46,34 +46,19 @@ L:
 		case <-time.After(period):
 			sn := s.clc.GetSnapshot(rang)
 			msg := &serverpb.Snapshot{}
+
 			if sn.Cpu.Filled {
-				msg.Cpu = &serverpb.CpuMessage{
-					Usr:  sn.Cpu.Usr,
-					Sys:  sn.Cpu.Sys,
-					Idle: sn.Cpu.Idle,
-				}
+				s.writeCpu(msg, sn.Cpu)
 			}
 
 			if sn.LA.Filled {
-				msg.La = &serverpb.LAMessage{
-					PerMinute:    sn.LA.PerMinute,
-					Per5Minutes:  sn.LA.Per5Minute,
-					Per15Minutes: sn.LA.Per15Minute,
-				}
+				s.writeLa(msg, sn.LA)
 			}
 
 			if sn.Disc.Filled {
-				msg.Disc = &serverpb.DiscMessage{}
-				for _, deviceInfo := range sn.Disc.Devices {
-					device := serverpb.Device{
-						Name: deviceInfo.Name,
-						Tps:  deviceInfo.Tps,
-						Rps:  deviceInfo.Rps,
-						Wps:  deviceInfo.Wps,
-					}
-					msg.Disc.Devices = append(msg.Disc.Devices, &device)
-				}
+				s.writeDisc(msg, sn.Disc)
 			}
+
 			msg.Time = timestamppb.Now()
 
 			if err := srv.Send(msg); err != nil {
@@ -84,4 +69,36 @@ L:
 	}
 
 	return nil
+}
+
+// writeLa записать в сообщение данные о LoadAverages.
+func (s *Service) writeLa(msg *serverpb.Snapshot, data collector.LA) {
+	msg.La = &serverpb.LAMessage{
+		PerMinute:    data.PerMinute,
+		Per5Minutes:  data.Per5Minute,
+		Per15Minutes: data.Per15Minute,
+	}
+}
+
+// writeCpu записать в сообщение данные о CPU.
+func (s *Service) writeCpu(msg *serverpb.Snapshot, data collector.Cpu) {
+	msg.Cpu = &serverpb.CpuMessage{
+		Usr:  data.Usr,
+		Sys:  data.Sys,
+		Idle: data.Idle,
+	}
+}
+
+// writeDisc записать в сообщение данные о нагрузке дисков.
+func (s *Service) writeDisc(msg *serverpb.Snapshot, data collector.DiscData) {
+	msg.Disc = &serverpb.DiscMessage{}
+	for _, deviceInfo := range data.Devices {
+		device := serverpb.Device{
+			Name: deviceInfo.Name,
+			Tps:  deviceInfo.Tps,
+			Rps:  deviceInfo.Rps,
+			Wps:  deviceInfo.Wps,
+		}
+		msg.Disc.Devices = append(msg.Disc.Devices, &device)
+	}
 }

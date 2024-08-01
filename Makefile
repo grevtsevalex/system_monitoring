@@ -20,3 +20,10 @@ lint: install-lint-deps
 
 generate:
 	protoc api/server.proto --go_out=./internal/server/pb --go-grpc_out=./internal/server/pb
+
+run-background:
+	$(PROG_NAME) -config ./configs/config.toml -port 55555 &
+
+integration-test: run-background
+	docker-compose -f ./integration-test/docker-compose.yml up
+

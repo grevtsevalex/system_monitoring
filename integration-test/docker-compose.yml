@@ -1,0 +1,9 @@
+services:
+  client:
+    image: int-client
+    build:
+      context: ../
+      dockerfile: client.Dockerfile
+    volumes:
+      - ../:/app
+    network_mode: host

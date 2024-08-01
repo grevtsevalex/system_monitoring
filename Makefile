@@ -20,3 +20,15 @@ lint: install-lint-deps
 
 generate:
 	protoc api/server.proto --go_out=./internal/server/pb --go-grpc_out=./internal/server/pb
+
+integration-server-up:
+	docker build -t int-server -f server.Dockerfile .
+	docker run --rm int-server
+
+integration-client-up:
+	docker build -t int-client -f client.Dockerfile .
+	docker run --rm int-client
+
+int-up:
+	docker-compose up
+

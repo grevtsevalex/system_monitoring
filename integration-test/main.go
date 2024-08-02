@@ -48,7 +48,7 @@ func main() {
 
 	var firstSumOfCpuValues float32
 	var firstSumOfLAValues float32
-	for i := range 10 {
+	for i := 0; i < 10; i++ {
 		sn, err := data.Recv()
 		if err != nil {
 			log.Fatal(err)

@@ -80,4 +80,7 @@ func main() {
 		fmt.Println(output)
 		fmt.Println()
 	}
+
+	fmt.Println("TEST FAILED")
+	os.Exit(1)
 }

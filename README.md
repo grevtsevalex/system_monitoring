@@ -31,4 +31,12 @@ go run ./cmd/client/main.go -port 55555
 make run-client
 ```
 
+### Запуск интеграционных тестов
+Интеграционный тест запускает на хостовой машине сервер и клиент в докер-контейнере. Клиент получает данные и проверяет, что они изменяются.
+Запустить тесты можно командой:
+
+```
+make integration-test
+```
+
 [Схема архитектуры](https://drive.google.com/file/d/1g72OyR0tcWNLNYvNxVvma_0FzSxUfRPl/view?usp=sharing)
